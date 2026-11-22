@@ -82,7 +82,8 @@ Manual and scheduled searches are stored in PostgreSQL before execution. A separ
 
 ```mermaid
 flowchart LR
-  UI[Next.js 15 / React 19] --> SA[Server Actions and API routes]
+  RUNTIME[Node.js 22 runtime] --> UI[Next.js 15 + React 19 web UI]
+  UI --> SA[Server Actions and API routes]
   SA --> DB[(PostgreSQL / Prisma)]
   SA --> Q[Persistent work queue]
   Q --> W[Background worker]
@@ -91,6 +92,10 @@ flowchart LR
   W --> DB
   SA --> AI[Optional AI providers]
 ```
+
+The version numbers describe different layers: **Node.js 22** is the runtime used by local development and CI, while **React 19** is the frontend library. The project does not require Node.js 19.
+
+JobSpy is also optional. The Greenhouse, Lever and Ashby adapters work directly without JobSpy or Python. The JobSpy bridge is needed only when enabling collection from LinkedIn, Indeed, HelloWork or Glassdoor.
 
 | Layer | Technologies |
 | --- | --- |
@@ -105,8 +110,10 @@ flowchart LR
 
 ### Requirements
 
-- Node.js 22
+- Node.js 22 (the version pinned in `.nvmrc` and used by CI)
 - Docker with Docker Compose
+
+Python and JobSpy are **not required** for the standard Greenhouse, Lever and Ashby workflow.
 
 ### Development mode
 
