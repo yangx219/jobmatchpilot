@@ -1,0 +1,3 @@
+ALTER TYPE "AgentWorkflowType" ADD VALUE IF NOT EXISTS 'cover_letter';
+ALTER TYPE "AgentWorkflowStatus" ADD VALUE IF NOT EXISTS 'WAITING_APPROVAL';
+ALTER TABLE "AgentWorkflow" ADD COLUMN "output" TEXT;

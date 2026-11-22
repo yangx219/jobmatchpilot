@@ -1,0 +1,28 @@
+**/node_modules
+npm-debug.log
+**/.next
+.vscode
+.git
+.env*
+
+**/*.db
+**/*.db-journal
+data/
+jobsyncdb/
+
+# Not needed by the build; excluded so edits here don't bust layer cache
+evals
+docs
+changes
+coverage
+__tests__
+e2e
+src/generated
+scripts/dist
+
+.venv-jobspy
+
+# Private account setup and verification scripts; do not publish with the app.
+scripts/create-xue-searches.mjs
+scripts/run-xue-searches.mjs
+scripts/smoke-personalized.mjs

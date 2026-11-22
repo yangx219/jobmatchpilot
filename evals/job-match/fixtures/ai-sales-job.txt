@@ -1,0 +1,13 @@
+Account Executive, AI Platform
+
+We are hiring a commercial Account Executive to own the full sales cycle for
+our AI platform. You will prospect enterprise customers, qualify leads,
+negotiate contracts, maintain CRM forecasts, and exceed quarterly revenue
+quota. This is not a software engineering role and does not include building
+models, agents, APIs, or production systems.
+
+REQUIREMENTS
+- 5+ years of enterprise SaaS sales experience
+- Demonstrated quota attainment and pipeline ownership
+- Contract negotiation and executive stakeholder management
+- Experience with Salesforce CRM

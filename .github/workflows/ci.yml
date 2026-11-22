@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  # dev reaches main by direct push and hotfixes land there; Jenkins covers dev
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - run: npx tsc --noEmit
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - name: Verify production build
+        run: npm run build
+
+  production-database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: jobmatchpilot_ci
+          POSTGRES_USER: jobmatchpilot
+          POSTGRES_PASSWORD: jobmatchpilot_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jobmatchpilot -d jobmatchpilot_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://jobmatchpilot:jobmatchpilot_ci@localhost:5432/jobmatchpilot_ci?schema=public
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - name: Apply every production migration
+        run: npx prisma migrate deploy
+
+      - name: Verify migration state
+        run: npx prisma migrate status
+
+      - name: Verify agent schema invariants
+        run: npm run test:db-schema

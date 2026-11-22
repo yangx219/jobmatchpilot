@@ -1,0 +1,101 @@
+"use client";
+import Link from "next/link";
+import { useI18n } from "@/components/i18n/LanguageProvider";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Briefcase } from "lucide-react";
+import { APP_CONSTANTS, SIDEBAR_GROUPS } from "@/lib/constants";
+import NavLink from "./NavLink";
+import { ProfileDropdown } from "./ProfileDropdown";
+import { usePathname } from "next/navigation";
+import { useSidebar } from "@/context/SidebarContext";
+import { cn } from "@/lib/utils";
+import { CurrentUser } from "@/models/user.model";
+
+interface SidebarProps {
+  user: CurrentUser | null;
+  signOutAction: () => void;
+}
+
+function Sidebar({ user, signOutAction }: SidebarProps) {
+  const path = usePathname();
+  const { t } = useI18n();
+  const { expanded } = useSidebar();
+  const isOnDashboard = path === "/dashboard";
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <aside
+        id={APP_CONSTANTS.SIDEBAR_DOM_ID}
+        className={cn(
+          "jobmatchpilot-sidebar fixed inset-y-0 left-0 z-10 hidden flex-col transition-[width] duration-200 ease-in-out sm:flex",
+          expanded
+            ? APP_CONSTANTS.SIDEBAR_WIDTH.expanded.rail
+            : APP_CONSTANTS.SIDEBAR_WIDTH.collapsed.rail,
+        )}
+      >
+        <div className="flex h-16 shrink-0 items-center overflow-hidden">
+          <div className="flex w-14 shrink-0 items-center justify-center">
+            <Link
+              href="/dashboard"
+              aria-current={isOnDashboard ? "page" : undefined}
+              onClick={(e) => {
+                if (isOnDashboard) e.preventDefault();
+              }}
+              className="group flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+            >
+              <Briefcase className="h-4 w-4 transition-transform group-hover:scale-110" />
+              <span className="sr-only">JobMatchPilot</span>
+            </Link>
+          </div>
+          <span
+            className={cn(
+              "truncate font-semibold transition-opacity duration-200",
+              expanded ? "opacity-100 delay-100" : "opacity-0",
+            )}
+          >
+            <span className="block text-base tracking-tight">JobMatchPilot</span>
+          </span>
+        </div>
+
+        <nav aria-label={t("Navigation principale")} className="flex flex-1 flex-col gap-5 overflow-y-auto pb-5 pt-2">
+          {SIDEBAR_GROUPS.map((group) => (
+            <div key={group.label} className="space-y-1">
+              <p
+                className={cn(
+                  "px-4 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-opacity duration-200",
+                  expanded ? "opacity-100 delay-100" : "pointer-events-none opacity-0",
+                )}
+              >
+                {t(group.label)}
+              </p>
+              {group.items.map((item) => {
+                if ("devOnly" in item && item.devOnly && process.env.NODE_ENV !== "development") return null;
+                return (
+                  <NavLink
+                    key={item.label}
+                    label={t(item.label)}
+                    Icon={item.icon}
+                    route={item.route}
+                    pathname={path}
+                    expanded={expanded}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        <div className="flex flex-col gap-1 border-t py-3">
+          <ProfileDropdown
+            user={user}
+            expanded={expanded}
+            signOutAction={signOutAction}
+          />
+        </div>
+      </aside>
+    </TooltipProvider>
+  );
+}
+
+export default Sidebar;

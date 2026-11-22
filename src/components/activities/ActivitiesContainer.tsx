@@ -1,0 +1,242 @@
+"use client";
+import { UiText } from "@/components/i18n/UiText";
+import ActivitiesTable from "./ActivitiesTable";
+import { Card, CardContent, CardTitle } from "../ui/card";
+import { ResponsiveCardHeader } from "../ResponsiveCardHeader";
+import { Button } from "../ui/button";
+import { Loader, PlusCircle } from "lucide-react";
+import { SearchInput } from "../SearchInput";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { ActivityForm } from "./ActivityForm";
+import { getActivitiesList } from "@/actions/activity.actions";
+import { Activity } from "@/models/activity.model";
+import { toastError } from "@/lib/toast";
+import Loading from "../Loading";
+import { APP_CONSTANTS } from "@/lib/constants";
+import { RecordsCount } from "../RecordsCount";
+import { useActivity } from "@/context/ActivityContext";
+import { useActivitySwitchConfirm } from "@/hooks/useActivitySwitchConfirm";
+import { useI18n } from "@/components/i18n/LanguageProvider";
+
+function ActivitiesContainer() {
+  const { t } = useI18n();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const autoOpenHandled = useRef(false);
+  const [activityFormOpen, setActivityFormOpen] = useState<boolean>(false);
+  const [activitiesList, setActivitiesList] = useState<Activity[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [totalActivities, setTotalActivities] = useState<number>(0);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const hasSearched = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const { currentActivity, startActivity } = useActivity();
+  const { requestStart, confirmDialog } = useActivitySwitchConfirm();
+  const prevActivityRef = useRef<Activity | undefined>(undefined);
+
+  const closeActivityForm = () => setActivityFormOpen(false);
+
+  const loadActivities = useCallback(
+    async (page: number, limit: number, search?: string) => {
+      if (page === 1) setInitialLoading(true);
+      else setLoadingMore(true);
+      try {
+        const { data, success, message, total } = await getActivitiesList(
+          page,
+          limit,
+          search,
+        );
+        if (success) {
+          setActivitiesList((prev) => (page === 1 ? data : [...prev, ...data]));
+          setTotalActivities(total);
+          setPage(page);
+        } else {
+          toastError(message);
+        }
+      } catch (error) {
+        toastError("Failed to load activities. Please try again.");
+      } finally {
+        setInitialLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [],
+  );
+
+  const reloadActivities = useCallback(async () => {
+    await loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
+  }, [loadActivities, searchTerm]);
+
+  const handleStartActivity = (activityId: string) => {
+    requestStart(async () => {
+      const success = await startActivity(activityId);
+      if (success) {
+        reloadActivities();
+      }
+      return success;
+    });
+  };
+
+  useEffect(() => {
+    if (autoOpenHandled.current) return;
+    if (searchParams.get("add-activity") === "true") {
+      autoOpenHandled.current = true;
+      setActivityFormOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("add-activity");
+      const newPath = params.toString()
+        ? `?${params.toString()}`
+        : window.location.pathname;
+      router.replace(newPath);
+    }
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE);
+  }, [loadActivities]);
+
+  // Reload activities when an activity is stopped (via global banner or otherwise)
+  useEffect(() => {
+    if (prevActivityRef.current && !currentActivity) {
+      reloadActivities();
+    }
+    prevActivityRef.current = currentActivity;
+  }, [currentActivity, reloadActivities]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTerm !== "") {
+      hasSearched.current = true;
+    }
+    if (searchTerm === "" && !hasSearched.current) return;
+
+    const timer = setTimeout(() => {
+      loadActivities(1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Infinite scroll: auto-load next page when sentinel is visible
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          !initialLoading &&
+          !loadingMore &&
+          activitiesList.length < totalActivities
+        ) {
+          loadActivities(page + 1, APP_CONSTANTS.RECORDS_PER_PAGE, searchTerm || undefined);
+        }
+      },
+      { threshold: APP_CONSTANTS.INTERSECTION_OBSERVER_THRESHOLD },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    activitiesList.length,
+    totalActivities,
+    page,
+    searchTerm,
+    initialLoading,
+    loadingMore,
+    loadActivities,
+  ]);
+
+  return (
+    <Card>
+      <ResponsiveCardHeader>
+        <div className="flex items-baseline gap-2">
+          <CardTitle><UiText text={"Activities"} /></CardTitle>
+          {!initialLoading && totalActivities > 0 && (
+            <RecordsCount count={activitiesList.length} total={totalActivities} label="activities" />
+          )}
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <SearchInput
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder={t("Search activities...")}
+          />
+          <Dialog open={activityFormOpen} onOpenChange={setActivityFormOpen}>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1"
+                data-testid="add-activity-btn"
+              >
+                <PlusCircle className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  <UiText text="New Activity" />
+                </span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle><UiText text="Add New Activity" /></DialogTitle>
+                <DialogDescription>
+                  <UiText text="Log a new activity to track your time and progress." />
+                </DialogDescription>
+              </DialogHeader>
+              <div className="p-4">
+                <ActivityForm
+                  onClose={closeActivityForm}
+                  reloadActivities={reloadActivities}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </ResponsiveCardHeader>
+      <CardContent>
+        {initialLoading && <Loading />}
+        {activitiesList.length > 0 && (
+          <>
+            <ActivitiesTable
+              activities={activitiesList}
+              reloadActivities={reloadActivities}
+              onStartActivity={handleStartActivity}
+            />
+          </>
+        )}
+        {!initialLoading && activitiesList.length === 0 && (
+          <div className="mx-auto flex max-w-md flex-col items-center gap-2 py-10 text-center">
+            <p className="font-medium"><UiText text="No activities yet" /></p>
+            <p className="text-sm text-muted-foreground"><UiText text="Record preparation time so it appears in your dashboard trends." /></p>
+            <Button size="sm" variant="outline" onClick={() => setActivityFormOpen(true)} className="mt-2">
+              <PlusCircle className="h-3.5 w-3.5" /><UiText text="New Activity" />
+            </Button>
+          </div>
+        )}
+        {activitiesList.length < totalActivities && (
+          <div ref={sentinelRef} className="flex justify-center p-4">
+            {loadingMore && (
+              <Loader className="h-5 w-5 animate-spin text-blue-500" />
+            )}
+          </div>
+        )}
+      </CardContent>
+      {confirmDialog}
+    </Card>
+  );
+}
+
+export default ActivitiesContainer;

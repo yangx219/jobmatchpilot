@@ -1,0 +1,86 @@
+name: offerflow
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: offerflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run node scripts/setup-local.mjs first}
+      POSTGRES_DB: offerflow
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U offerflow -d offerflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    image: offerflow:local
+    ports:
+      - "127.0.0.1:3737:3737"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3737/api/health?ready=1').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    environment:
+      NODE_ENV: production
+      JOBMATCHPILOT_PROCESS_ROLE: web
+      DATABASE_URL: postgres://offerflow:${POSTGRES_PASSWORD}@db:5432/offerflow
+      AUTH_SECRET: ${AUTH_SECRET:?Run node scripts/setup-local.mjs first}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Run node scripts/setup-local.mjs first}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3737}
+      AUTH_TRUST_HOST: "true"
+      TZ: Europe/Paris
+      MCP_ENABLED: "false"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      JOBSPY_PYTHON: /opt/jobspy/bin/python
+    volumes:
+      - ./data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  worker:
+    image: offerflow:local
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      JOBMATCHPILOT_PROCESS_ROLE: worker
+      DATABASE_URL: postgres://offerflow:${POSTGRES_PASSWORD}@db:5432/offerflow
+      AUTH_SECRET: ${AUTH_SECRET:?Run node scripts/setup-local.mjs first}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Run node scripts/setup-local.mjs first}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3737}
+      AUTH_TRUST_HOST: "true"
+      TZ: Europe/Paris
+      MCP_ENABLED: "false"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      JOBSPY_PYTHON: /opt/jobspy/bin/python
+    volumes:
+      - ./data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+    name: offerflow_pgdata
