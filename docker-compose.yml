@@ -1,18 +1,18 @@
-name: offerflow
+name: jobmatchpilot
 
 services:
   db:
     image: postgres:18-alpine
     environment:
-      POSTGRES_USER: offerflow
+      POSTGRES_USER: ${POSTGRES_USER:-jobmatchpilot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run node scripts/setup-local.mjs first}
-      POSTGRES_DB: offerflow
+      POSTGRES_DB: ${POSTGRES_DB:-jobmatchpilot}
     ports:
       - "127.0.0.1:55432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U offerflow -d offerflow"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobmatchpilot} -d ${POSTGRES_DB:-jobmatchpilot}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,7 +20,7 @@ services:
 
   app:
     build: .
-    image: offerflow:local
+    image: jobmatchpilot:local
     ports:
       - "127.0.0.1:3737:3737"
     depends_on:
@@ -35,7 +35,7 @@ services:
     environment:
       NODE_ENV: production
       JOBMATCHPILOT_PROCESS_ROLE: web
-      DATABASE_URL: postgres://offerflow:${POSTGRES_PASSWORD}@db:5432/offerflow
+      DATABASE_URL: postgres://${POSTGRES_USER:-jobmatchpilot}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jobmatchpilot}
       AUTH_SECRET: ${AUTH_SECRET:?Run node scripts/setup-local.mjs first}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Run node scripts/setup-local.mjs first}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3737}
@@ -55,14 +55,14 @@ services:
     restart: unless-stopped
 
   worker:
-    image: offerflow:local
+    image: jobmatchpilot:local
     depends_on:
       app:
         condition: service_healthy
     environment:
       NODE_ENV: production
       JOBMATCHPILOT_PROCESS_ROLE: worker
-      DATABASE_URL: postgres://offerflow:${POSTGRES_PASSWORD}@db:5432/offerflow
+      DATABASE_URL: postgres://${POSTGRES_USER:-jobmatchpilot}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jobmatchpilot}
       AUTH_SECRET: ${AUTH_SECRET:?Run node scripts/setup-local.mjs first}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Run node scripts/setup-local.mjs first}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3737}
@@ -83,4 +83,4 @@ services:
 
 volumes:
   pgdata:
-    name: offerflow_pgdata
+    name: ${POSTGRES_VOLUME_NAME:-jobmatchpilot_pgdata}

@@ -45,5 +45,5 @@ Screenshots are written to ignored `test-results/analytics-*.png`.
 
 A phone cannot reach a computer through the computer's `127.0.0.1` URL. For
 physical-device testing, use a reachable deployment or configure the local
-server to listen on the LAN (`OFFERFLOW_HOST=0.0.0.0 npm start`, after stopping
+server to listen on the LAN (`JOBMATCHPILOT_HOST=0.0.0.0 npm start`, after stopping
 the existing local process), then open the computer's LAN IP on the same Wi-Fi.

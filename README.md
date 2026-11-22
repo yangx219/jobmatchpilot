@@ -84,8 +84,6 @@ docker compose logs -f app worker
 - le rôle `web` sert l’application ;
 - le rôle `worker` consomme la file persistante et les tâches planifiées.
 
-Les identifiants internes `offerflow` encore présents dans Docker et la base sont conservés uniquement pour la compatibilité avec les volumes locaux existants. Le produit public et les nouvelles interfaces utilisent le nom JobMatchPilot.
-
 ## Qualité
 
 ```bash

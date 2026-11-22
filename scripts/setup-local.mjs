@@ -4,7 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const password = randomBytes(24).toString("hex");
 const content = `POSTGRES_PASSWORD=${password}
-DATABASE_URL=postgres://offerflow:${password}@localhost:55432/offerflow
+POSTGRES_USER=jobmatchpilot
+POSTGRES_DB=jobmatchpilot
+POSTGRES_VOLUME_NAME=jobmatchpilot_pgdata
+DATABASE_URL=postgres://jobmatchpilot:${password}@localhost:55432/jobmatchpilot
 AUTH_SECRET=${randomBytes(32).toString("hex")}
 ENCRYPTION_KEY=${randomBytes(32).toString("hex")}
 NEXTAUTH_URL=http://localhost:3737

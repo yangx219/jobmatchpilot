@@ -9,7 +9,7 @@ const Health = z.object({ id: z.string(), status: z.enum(["ok", "empty", "partia
 const Result = z.object({ sourceHealth: z.array(Health), jobs: z.array(z.object({ title: z.string(), company: z.string(), location: z.string(), description: z.string(), url: z.url(), sourceBoard: z.string(), postedDate: z.string().nullable().optional(), postedDatePrecision: z.enum(["day", "timestamp"]).optional(), postedDateKind: z.enum(["first", "last", "platform", "posted"]).optional(), employmentType: z.string().optional(), isRemote: z.boolean().optional() })), errors: z.array(z.object({ token: z.string(), reason: z.string() })) });
 export const searchJobSpy: AtsProvider["search"] = async (_sources, context) => {
   const cfg = JobSpySourceConfigSchema.parse(JSON.parse(context?.sourceConfig ?? "{}").jobspy);
-  const root = process.env.OFFERFLOW_PROJECT_ROOT ?? process.cwd();
+  const root = process.env.JOBMATCHPILOT_PROJECT_ROOT ?? process.cwd();
   const python = process.env.JOBSPY_PYTHON ?? path.join(root, ".venv-jobspy/bin/python");
   const script = path.join(root, "scripts/collectors/jobspy_bridge.py");
   if (!existsSync(python) || !existsSync(script)) return { jobs: [], errors: cfg.sites.map((token) => ({ token, reason: "collector_not_installed" })) };
