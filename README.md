@@ -7,7 +7,7 @@ A workspace for finding jobs from a CV and managing the application process from
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1)
 
-I built JobMatchPilot to replace the spreadsheets and disconnected tools I was using during my own job search. A CV becomes an editable search profile, job offers are collected and deduplicated, and the selected applications stay connected to tasks, activities and interview preparation.
+JobMatchPilot replaces the spreadsheets and disconnected tools often used during a job search. A CV becomes an editable search profile, job offers are collected and deduplicated, and selected applications stay connected to tasks, activities and interview preparation.
 
 The interface is available in English, French and Chinese. AI can be used for CV–job analysis, but it is not required for job collection and never sends an application on the user's behalf.
 
@@ -131,9 +131,9 @@ docs/             Architecture and product documentation
 
 ## Project origin
 
-JobMatchPilot started from [JobSync v1.2.0](https://github.com/gsync/jobsync). I kept the original MIT license and documented the inherited features and my changes in [docs/project/upstream.md](docs/project/upstream.md).
+JobMatchPilot started from [JobSync v1.2.0](https://github.com/gsync/jobsync). The original MIT license is retained, and inherited features are separated from JobMatchPilot contributions in [docs/project/upstream.md](docs/project/upstream.md).
 
-The optional JobSpy code under `vendor/jobspy/` also keeps its original license. My work around it covers the execution bridge, validation, queue integration and shared normalization pipeline.
+The optional JobSpy code under `vendor/jobspy/` also keeps its original license. JobMatchPilot adds the execution bridge, validation, queue integration and shared normalization pipeline.
 
 ## License
 
